@@ -4,15 +4,27 @@ import { Link } from 'react-router-dom';
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { User, Package, Calendar, ArrowUpRight } from 'lucide-react';
+import { User, Package, Calendar, ArrowUpRight, X, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Separator } from '@/components/ui/separator';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const profileFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -21,14 +33,16 @@ const profileFormSchema = z.object({
 
 const Profile = () => {
   const { user, updateProfile } = useAuth();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("profile");
+  const [orderToCancel, setOrderToCancel] = useState<string | null>(null);
   
   // Get orders from localStorage
-  const orders = React.useMemo(() => {
+  const [orders, setOrders] = useState(() => {
     const allOrders = JSON.parse(localStorage.getItem('bookOrders') || '[]');
     return allOrders.filter((order: any) => order.userId === user?.id)
       .sort((a: any, b: any) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
-  }, [user?.id]);
+  });
   
   const form = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
@@ -40,6 +54,10 @@ const Profile = () => {
   
   const onSubmit = (values: z.infer<typeof profileFormSchema>) => {
     updateProfile(values);
+    toast({
+      title: "Profile updated",
+      description: "Your profile information has been updated successfully",
+    });
   };
   
   const formatDate = (dateString: string) => {
@@ -49,6 +67,39 @@ const Profile = () => {
       day: 'numeric' 
     };
     return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  const handleCancelOrder = (orderId: string) => {
+    // Get all orders from localStorage
+    const allOrders = JSON.parse(localStorage.getItem('bookOrders') || '[]');
+    
+    // Update the status of the specific order to cancelled
+    const updatedAllOrders = allOrders.map((order: any) => 
+      order.id === orderId ? { ...order, status: 'cancelled' } : order
+    );
+    
+    // Save back to localStorage
+    localStorage.setItem('bookOrders', JSON.stringify(updatedAllOrders));
+    
+    // Update the state
+    const updatedOrders = orders.map((order: any) => 
+      order.id === orderId ? { ...order, status: 'cancelled' } : order
+    );
+    setOrders(updatedOrders);
+    
+    // Close the dialog
+    setOrderToCancel(null);
+    
+    // Show success message
+    toast({
+      title: "Order cancelled",
+      description: "Your order has been cancelled successfully",
+    });
+  };
+
+  const canCancelOrder = (status: string) => {
+    // Only allow cancellation if order is in pending or processing state
+    return ['pending', 'processing'].includes(status);
   };
 
   return (
@@ -149,7 +200,12 @@ const Profile = () => {
                               </p>
                             </div>
                             <div>
-                              <span className="bg-bookish-muted/30 text-bookish-accent px-3 py-1 rounded-full text-sm font-medium">
+                              <span className={`bg-bookish-muted/30 text-bookish-accent px-3 py-1 rounded-full text-sm font-medium ${
+                                order.status === 'cancelled' ? 'bg-red-100 text-red-600' : 
+                                order.status === 'delivered' ? 'bg-green-100 text-green-600' :
+                                order.status === 'shipped' ? 'bg-blue-100 text-blue-600' :
+                                ''
+                              }`}>
                                 {order.status}
                               </span>
                             </div>
@@ -187,7 +243,7 @@ const Profile = () => {
                             )}
                           </div>
                           
-                          <div className="mt-4">
+                          <div className="mt-4 flex flex-wrap gap-3">
                             <Link 
                               to="/thank-you" 
                               state={{ order }}
@@ -196,6 +252,42 @@ const Profile = () => {
                               View details
                               <ArrowUpRight className="h-4 w-4 ml-1" />
                             </Link>
+                            
+                            {canCancelOrder(order.status) && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="text-red-500 border-red-200 hover:bg-red-50"
+                                  >
+                                    <X className="h-4 w-4 mr-1" />
+                                    Cancel Order
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle className="flex items-center text-red-500">
+                                      <AlertTriangle className="h-5 w-5 mr-2" />
+                                      Cancel Order
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to cancel this order?
+                                      This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>No, keep order</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                      onClick={() => handleCancelOrder(order.id)}
+                                      className="bg-red-500 hover:bg-red-600 text-white"
+                                    >
+                                      Yes, cancel order
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
                           </div>
                         </div>
                       ))}

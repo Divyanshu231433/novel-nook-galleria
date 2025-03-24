@@ -1,16 +1,33 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { ChevronLeft, ShoppingBag, ShoppingCart } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ChevronLeft, ShoppingBag, ShoppingCart, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartItem from '@/components/CartItem';
 import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/components/ui/use-toast';
 
 const Cart = () => {
   const { items, totalItems, totalPrice, clearCart } = useCart();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  
+  const handleCheckout = () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Login required",
+        description: "Please login to continue to checkout",
+      });
+      navigate('/login');
+      return;
+    }
+    
+    navigate('/checkout');
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -99,9 +116,19 @@ const Cart = () => {
                       <span>${(totalPrice + (totalPrice * 0.1)).toFixed(2)}</span>
                     </div>
                     
-                    <Button className="w-full bg-bookish-accent hover:bg-bookish-accent/90 text-white">
+                    <Button 
+                      className="w-full bg-bookish-accent hover:bg-bookish-accent/90 text-white mb-3 flex items-center justify-center"
+                      onClick={handleCheckout}
+                    >
+                      <CreditCard className="h-4 w-4 mr-2" />
                       Proceed to Checkout
                     </Button>
+                    
+                    {!isAuthenticated && (
+                      <p className="text-xs text-center text-muted-foreground">
+                        You'll need to sign in to complete your purchase
+                      </p>
+                    )}
                     
                     <div className="mt-6 text-center text-xs text-muted-foreground">
                       Secure payment processing by Stripe

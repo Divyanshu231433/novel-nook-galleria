@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { BookOpen, ShoppingBag, Menu, X, Search } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { BookOpen, ShoppingBag, Menu, X, Search, User, LogOut } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -11,9 +12,18 @@ import {
   SheetContent, 
   SheetTrigger 
 } from '@/components/ui/sheet';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navbar: React.FC = () => {
   const { totalItems } = useCart();
+  const { user, isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
@@ -27,6 +37,11 @@ const Navbar: React.FC = () => {
       window.removeEventListener('scroll', handleScroll);
     };
   }, []);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <header 
@@ -84,6 +99,48 @@ const Navbar: React.FC = () => {
               )}
             </Link>
 
+            {/* Auth Buttons */}
+            {isAuthenticated ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full">
+                    <User className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="flex items-center justify-start gap-2 p-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-bookish-muted">
+                      <User className="h-4 w-4 text-bookish-accent" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium leading-none">{user?.name}</p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {user?.email}
+                      </p>
+                    </div>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="cursor-pointer">Profile</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/cart" className="cursor-pointer">Cart</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Link to="/login">
+                <Button variant="outline" size="sm" className="hidden md:flex">
+                  Sign In
+                </Button>
+              </Link>
+            )}
+
             {/* Mobile Menu */}
             <Sheet>
               <SheetTrigger asChild>
@@ -98,6 +155,23 @@ const Navbar: React.FC = () => {
                   <Link to="/books" className="text-lg font-medium hover:text-bookish-accent transition-colors">Books</Link>
                   <Link to="/categories" className="text-lg font-medium hover:text-bookish-accent transition-colors">Categories</Link>
                   <Link to="/about" className="text-lg font-medium hover:text-bookish-accent transition-colors">About</Link>
+                  
+                  {isAuthenticated ? (
+                    <>
+                      <Link to="/profile" className="text-lg font-medium hover:text-bookish-accent transition-colors">Profile</Link>
+                      <button 
+                        onClick={handleLogout} 
+                        className="text-lg font-medium text-left hover:text-bookish-accent transition-colors"
+                      >
+                        Log out
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link to="/login" className="text-lg font-medium hover:text-bookish-accent transition-colors">Sign In</Link>
+                      <Link to="/signup" className="text-lg font-medium hover:text-bookish-accent transition-colors">Sign Up</Link>
+                    </>
+                  )}
                 </nav>
               </SheetContent>
             </Sheet>

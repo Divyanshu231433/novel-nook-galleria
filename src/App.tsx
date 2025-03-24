@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,6 +9,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import Index from "./pages/Index";
 import Books from "./pages/Books";
 import Categories from "./pages/Categories";
+import CategoryDetail from "./pages/CategoryDetail";
 import About from "./pages/About";
 import BookDetail from "./pages/BookDetail";
 import Cart from "./pages/Cart";
@@ -26,6 +28,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/books" element={<Books />} />
             <Route path="/categories" element={<Categories />} />
+            <Route path="/categories/:slug" element={<CategoryDetail />} />
             <Route path="/about" element={<About />} />
             <Route path="/books/:id" element={<BookDetail />} />
             <Route path="/cart" element={<Cart />} />

@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Book } from '@/lib/bookData';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { Heart, ShoppingBag, Star } from 'lucide-react';
+import { useToast } from "@/components/ui/use-toast";
 
 interface BookCardProps {
   book: Book;
@@ -13,6 +14,30 @@ interface BookCardProps {
 
 const BookCard: React.FC<BookCardProps> = ({ book, index = 0 }) => {
   const { addItem } = useCart();
+  const { toast } = useToast();
+  const [isFavorite, setIsFavorite] = useState(false);
+  
+  const toggleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent navigating to book detail
+    setIsFavorite(!isFavorite);
+    
+    toast({
+      title: isFavorite ? "Removed from favorites" : "Added to favorites",
+      description: `"${book.title}" has been ${isFavorite ? "removed from" : "added to"} your favorites.`,
+      duration: 2000,
+    });
+  };
+  
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent navigating to book detail
+    addItem(book);
+    
+    toast({
+      title: "Added to cart",
+      description: `"${book.title}" has been added to your cart.`,
+      duration: 2000,
+    });
+  };
   
   return (
     <div 
@@ -32,17 +57,18 @@ const BookCard: React.FC<BookCardProps> = ({ book, index = 0 }) => {
           <Button 
             variant="ghost" 
             size="icon" 
-            className="h-8 w-8 rounded-full bg-white/80 backdrop-blur-sm text-bookish-ink hover:bg-white hover:text-bookish-accent"
+            className={`h-8 w-8 rounded-full bg-white/80 backdrop-blur-sm ${isFavorite ? 'text-red-500 hover:text-red-600' : 'text-bookish-ink hover:text-bookish-accent'}`}
+            onClick={toggleFavorite}
           >
-            <Heart className="h-4 w-4" />
-            <span className="sr-only">Add to favorites</span>
+            <Heart className={`h-4 w-4 ${isFavorite ? 'fill-current' : ''}`} />
+            <span className="sr-only">{isFavorite ? 'Remove from favorites' : 'Add to favorites'}</span>
           </Button>
         </div>
         
         <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-full opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
           <Button 
             className="w-full bg-bookish-accent hover:bg-bookish-accent/90 text-white flex items-center gap-2"
-            onClick={() => addItem(book)}
+            onClick={handleAddToCart}
           >
             <ShoppingBag className="h-4 w-4" />
             Add to cart

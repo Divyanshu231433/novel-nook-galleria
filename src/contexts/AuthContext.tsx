@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
 
@@ -6,6 +5,7 @@ interface User {
   id: string;
   email: string;
   name: string;
+  role?: string;  // Added role property as optional
 }
 
 interface AuthContextType {
@@ -15,6 +15,7 @@ interface AuthContextType {
   signup: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
   updateProfile: (data: Partial<User>) => void;
+  adminLogin: (email: string, password: string) => Promise<boolean>; // Added adminLogin function
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -161,6 +162,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
+  // Implement adminLogin function
+  const adminLogin = async (email: string, password: string): Promise<boolean> => {
+    try {
+      // For demo, check against hardcoded admin credentials
+      // In production, this would be a server-side check
+      if (email === "admin@novelnook.com" && password === "admin123") {
+        const adminUser = {
+          id: "admin-id",
+          email: email,
+          name: "Admin",
+          role: "admin"
+        };
+        
+        localStorage.setItem('bookUser', JSON.stringify(adminUser));
+        setUser(adminUser);
+        setIsAuthenticated(true);
+        
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Admin login error:', error);
+      return false;
+    }
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -168,7 +196,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       login, 
       signup, 
       logout,
-      updateProfile
+      updateProfile,
+      adminLogin
     }}>
       {children}
     </AuthContext.Provider>

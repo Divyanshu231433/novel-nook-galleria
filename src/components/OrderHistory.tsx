@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useOrders, Order, OrderStatus } from '@/contexts/OrderContext';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { 
   Dialog,
   DialogContent,
@@ -60,6 +59,17 @@ const getStatusColor = (status: OrderStatus) => {
   }
 };
 
+// Helper function to safely format dates
+const safeFormatDate = (dateString: string, formatStr: string): string => {
+  try {
+    const date = new Date(dateString);
+    return isValid(date) ? format(date, formatStr) : 'Invalid date';
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Invalid date';
+  }
+};
+
 const OrderHistory: React.FC<OrderHistoryProps> = ({ showCancelOption = true }) => {
   const { orders, cancelOrder } = useOrders();
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
@@ -100,7 +110,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ showCancelOption = true }) 
               <div>
                 <CardTitle className="text-lg">Order #{order.id.slice(0, 8)}</CardTitle>
                 <CardDescription>
-                  Placed on {format(new Date(order.createdAt), 'MMMM d, yyyy')}
+                  Placed on {safeFormatDate(order.createdAt, 'MMMM d, yyyy')}
                 </CardDescription>
               </div>
               
@@ -183,7 +193,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ showCancelOption = true }) 
           
           <CardFooter className="border-t bg-muted/10 flex justify-between py-3">
             <span className="text-sm text-muted-foreground">
-              Last updated: {format(new Date(order.updatedAt), 'MMM d, yyyy h:mm a')}
+              Last updated: {safeFormatDate(order.updatedAt, 'MMM d, yyyy h:mm a')}
             </span>
           </CardFooter>
         </Card>

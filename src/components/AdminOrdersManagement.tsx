@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useOrders, Order, OrderStatus } from '@/contexts/OrderContext';
 import { Input } from '@/components/ui/input';
@@ -14,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { Search, Filter, MoreHorizontal, ShoppingBag, Clock, AlertTriangle, Package, Truck, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import {
   Table,
@@ -59,6 +58,17 @@ const getStatusBadge = (status: OrderStatus) => {
   }
 };
 
+// Helper function to safely format dates
+const safeFormatDate = (dateString: string, formatStr: string): string => {
+  try {
+    const date = new Date(dateString);
+    return isValid(date) ? format(date, formatStr) : 'Invalid date';
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Invalid date';
+  }
+};
+
 const AdminOrdersManagement: React.FC = () => {
   const { allOrders, updateOrderStatus } = useOrders();
   const [searchTerm, setSearchTerm] = useState('');
@@ -74,9 +84,17 @@ const AdminOrdersManagement: React.FC = () => {
     )
     .filter(order => statusFilter === 'all' ? true : order.status === statusFilter)
     .sort((a, b) => {
-      const dateA = new Date(a.createdAt).getTime();
-      const dateB = new Date(b.createdAt).getTime();
-      return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
+      try {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        if (isNaN(dateA) || isNaN(dateB)) {
+          return 0;
+        }
+        return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
+      } catch (error) {
+        console.error('Error sorting dates:', error);
+        return 0;
+      }
     });
   
   const handleUpdateStatus = (orderId: string, status: OrderStatus) => {
@@ -188,7 +206,7 @@ const AdminOrdersManagement: React.FC = () => {
                           <div className="text-sm text-muted-foreground">{order.userEmail}</div>
                         </div>
                       </TableCell>
-                      <TableCell>{format(new Date(order.createdAt), 'MMM d, yyyy')}</TableCell>
+                      <TableCell>{safeFormatDate(order.createdAt, 'MMM d, yyyy')}</TableCell>
                       <TableCell>{order.items.length}</TableCell>
                       <TableCell>${order.totalAmount.toFixed(2)}</TableCell>
                       <TableCell>{getStatusBadge(order.status)}</TableCell>
